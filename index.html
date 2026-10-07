@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAIDA ROOm – Boutique</title>
+<meta name="description" content="FAIDA ROOm : produits divers, commande simple par WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#0F4C5C;--sun:#FFC83D;--bg:#F6F7F9;--ink:#14202B;--coral:#E4572E;--card:#fff;--line:#DDE3E8}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+h1,h2,.logo{font-family:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif}
+header{background:var(--teal);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-weight:800;font-size:1.3rem}
+.logo span{color:var(--sun)}
+header a{color:var(--sun);font-weight:600;text-decoration:none}
+.hero{background:var(--teal);color:#fff;padding:36px 20px 56px;border-radius:0 0 40px 0}
+.hero h1{font-size:clamp(2rem,8vw,3.4rem);line-height:1.05;max-width:14ch}
+.hero p{margin:14px 0 22px;max-width:36ch;opacity:.9}
+.btn{display:inline-block;background:var(--sun);color:var(--ink);font-weight:700;padding:12px 20px;border-radius:10px;text-decoration:none;border:0;font-size:1rem;cursor:pointer}
+.btn:focus-visible,.chip:focus-visible,a:focus-visible{outline:3px solid var(--coral);outline-offset:2px}
+main{max-width:960px;margin:0 auto;padding:32px 20px}
+h2{font-size:1.6rem;margin-bottom:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{border:2px solid var(--teal);background:transparent;color:var(--teal);padding:7px 14px;border-radius:99px;font-weight:600;cursor:pointer;font-size:.95rem}
+.chip[aria-pressed="true"]{background:var(--teal);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.pic{height:130px;display:grid;place-items:center;font-size:3rem;background:var(--sun)}
+.card:nth-child(3n+2) .pic{background:#BFE3DD}
+.card:nth-child(3n) .pic{background:#F6C9B8}
+.body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.body h3{font-size:1.05rem}
+.body p{font-size:.9rem;color:#4A5865}
+.price{font-weight:800;font-size:1.15rem;margin-top:auto}
+.card .btn{text-align:center;padding:10px;margin-top:6px}
+.info{margin-top:40px;padding:22px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.info li{margin:6px 0 6px 20px}
+footer{text-align:center;padding:24px;color:#4A5865;font-size:.9rem}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FAIDA <span>ROOm</span></div>
+  <a href="#produits">Produits</a>
+</header>
+
+<section class="hero">
+  <h1>Tout ce qu'il vous faut, au même endroit.</h1>
+  <p>Choisissez vos produits, commandez en un message sur WhatsApp.</p>
+  <a class="btn" href="#produits">Voir les produits</a>
+</section>
+
+<main>
+  <h2 id="produits">Nos produits</h2>
+  <div class="chips" id="filtres">
+    <button class="chip" data-cat="tous" aria-pressed="true">Tous</button>
+    <button class="chip" data-cat="maison" aria-pressed="false">Maison</button>
+    <button class="chip" data-cat="mode" aria-pressed="false">Mode</button>
+    <button class="chip" data-cat="tech" aria-pressed="false">Électronique</button>
+  </div>
+
+  <div class="grid" id="liste"></div>
+
+  <section class="info">
+    <h2>Comment commander</h2>
+    <ol>
+      <li>Choisissez un produit et appuyez sur « Commander ».</li>
+      <li>Votre message WhatsApp est déjà écrit, il suffit de l'envoyer.</li>
+      <li>Nous confirmons le prix final et la livraison.</li>
+    </ol>
+  </section>
+</main>
+
+<footer>© <span id="annee"></span> FAIDA ROOm</footer>
+
+<script>
+// ===== À MODIFIER =====
+var NUMERO = "243000000000"; // votre numéro WhatsApp, avec l'indicatif, sans + ni espaces
+var DEVISE = "$";
+var PRODUITS = [
+  {nom:"Lampe de chevet",desc:"Lumière douce, sobre et solide.",prix:12,cat:"maison",icone:"💡"},
+  {nom:"Set de casseroles",desc:"3 pièces, tous feux.",prix:35,cat:"maison",icone:"🍳"},
+  {nom:"Sac à dos",desc:"Résistant, 25 litres.",prix:20,cat:"mode",icone:"🎒"},
+  {nom:"Baskets",desc:"Confortables pour tous les jours.",prix:28,cat:"mode",icone:"👟"},
+  {nom:"Écouteurs sans fil",desc:"Bluetooth, boîtier de charge.",prix:18,cat:"tech",icone:"🎧"},
+  {nom:"Chargeur rapide",desc:"Compatible Android, câble inclus.",prix:9,cat:"tech",icone:"🔌"}
+];
+// ======================
+
+var liste = document.getElementById("liste");
+function afficher(cat){
+  liste.innerHTML = "";
+  PRODUITS.filter(function(p){return cat==="tous"||p.cat===cat;}).forEach(function(p){
+    var msg = encodeURIComponent("Bonjour FAIDA ROOm, je souhaite commander : " + p.nom + " (" + p.prix + " " + DEVISE + ").");
+    var c = document.createElement("article");
+    c.className = "card";
+    c.innerHTML = '<div class="pic" aria-hidden="true">'+p.icone+'</div>'+
+      '<div class="body"><h3>'+p.nom+'</h3><p>'+p.desc+'</p>'+
+      '<div class="price">'+p.prix+' '+DEVISE+'</div>'+
+      '<a class="btn" href="https://wa.me/'+NUMERO+'?text='+msg+'">Commander</a></div>';
+    liste.appendChild(c);
+  });
+}
+document.getElementById("filtres").addEventListener("click", function(e){
+  var b = e.target.closest(".chip"); if(!b) return;
+  document.querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed", x===b);});
+  afficher(b.dataset.cat);
+});
+document.getElementById("annee").textContent = new Date().getFullYear();
+afficher("tous");
+</script>
+</body>
+</html>

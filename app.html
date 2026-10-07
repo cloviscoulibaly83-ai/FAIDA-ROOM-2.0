@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2B2F77">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>FAIDA ROOM</title>
+<style>
+:root{--bg:#F4F6FA;--ink:#1B1E33;--indigo:#2B2F77;--mango:#FFB400;--line:#DDE1EC;--mute:#5B6078}
+*{box-sizing:border-box;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:72px}
+header{background:var(--indigo);color:#fff;padding:1rem 1.1rem;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.35rem;letter-spacing:-.01em}header h1 span{color:var(--mango)}
+main{max-width:760px;margin:0 auto;padding:1rem}
+input,select,button,textarea{font:inherit}
+input,select{width:100%;padding:.7rem;border:1.5px solid var(--line);border-radius:10px;background:#fff;margin-bottom:.6rem}
+.btn{border:0;background:var(--mango);color:var(--ink);font-weight:700;padding:.75rem 1rem;border-radius:10px;cursor:pointer}
+.btn.alt{background:var(--indigo);color:#fff}.btn.ghost{background:#fff;border:1.5px solid var(--line)}.btn.red{background:#E5484D;color:#fff}
+.btn.full{width:100%}.btn.sm{padding:.4rem .7rem;font-size:.9rem}
+.chips{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.6rem;margin-bottom:.5rem}
+.chips button{flex:none;border:1.5px solid var(--indigo);background:transparent;color:var(--indigo);padding:.45rem .9rem;border-radius:99px;font-weight:600}
+.chips button.on{background:var(--indigo);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem}
+@media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.pic{aspect-ratio:1;background:#E9ECF7 center/cover;display:grid;place-items:center;font-size:2.6rem}
+.cb{padding:.7rem;display:flex;flex-direction:column;gap:.2rem;flex:1}
+.cb b{font-size:.98rem}.cb small{color:var(--mute)}.pr{font-weight:800;margin:.3rem 0}
+.row{display:flex;align-items:center;gap:.7rem;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.6rem;margin-bottom:.6rem}
+.row .th{width:52px;height:52px;border-radius:8px;background:#E9ECF7 center/cover;flex:none;display:grid;place-items:center;font-size:1.5rem}
+.row .in{flex:1;min-width:0}.row .in b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty{display:flex;align-items:center;gap:.5rem}.qty button{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-weight:800}
+.tot{display:flex;justify-content:space-between;font-size:1.2rem;font-weight:800;margin:1rem 0}
+h2{margin:.4rem 0 .8rem;font-size:1.2rem}.empty{text-align:center;color:var(--mute);padding:2rem 1rem}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:6}
+nav button{flex:1;border:0;background:none;padding:.6rem 0 .7rem;color:var(--mute);font-weight:600;font-size:.8rem;position:relative}
+nav button.on{color:var(--indigo)}nav button span{display:block;font-size:1.3rem}
+#bd{position:absolute;top:2px;left:55%;background:var(--mango);color:var(--ink);border-radius:99px;font-size:.7rem;padding:0 .4rem;font-weight:800}
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:1}.hide{display:none}label{font-size:.85rem;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><h1>FAIDA <span>ROOM</span></h1><button class="btn sm hide" id="inst">Installer</button></header>
+<main id="v"></main>
+<nav>
+ <button data-t="shop"><span>🛍️</span>Boutique</button>
+ <button data-t="cart"><span>🧺</span>Panier<i id="bd" class="hide">0</i></button>
+ <button data-t="admin"><span>⚙️</span>Gestion</button>
+</nav>
+<div id="toast"></div>
+<script>
+const DEMO=[
+{id:1,nom:"Écouteurs sans fil",cat:"Électronique",prix:25,photo:"",emoji:"🎧"},
+{id:2,nom:"Chargeur rapide",cat:"Électronique",prix:12,photo:"",emoji:"🔌"},
+{id:3,nom:"Sac à dos",cat:"Mode",prix:30,photo:"",emoji:"🎒"},
+{id:4,nom:"Montre classique",cat:"Mode",prix:40,photo:"",emoji:"⌚"},
+{id:5,nom:"Set de casseroles",cat:"Maison",prix:55,photo:"",emoji:"🍳"},
+{id:6,nom:"Lampe de chevet",cat:"Maison",prix:18,photo:"",emoji:"💡"}];
+const DB=""; // URL de ta base Firebase, ex. https://faida-room-default-rtdb.firebaseio.com
+const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{toast("Stockage plein : photo trop lourde")}};
+let P=[],cart=ls("fr_cart",{}),cfg=Object.assign({wa:"243000000000",dev:"$",pin:"1234",cle:""},ls("fr_cfg",{}));
+let tab="shop",cat="Tout",q="",unlocked=false,edit=null,client=ls("fr_client",{nom:"",adr:""});
+const $=s=>document.querySelector(s),V=$("#v");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>`${(+n).toLocaleString("fr-FR",{maximumFractionDigits:2})} ${esc(cfg.dev)}`;
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
+const pic=p=>p.photo?`style="background-image:url('${p.photo}')"`:"";
+const picTxt=p=>p.photo?"":esc(p.emoji||"📦");
+const count=()=>Object.values(cart).reduce((a,b)=>a+b,0);
+function badge(){const b=$("#bd"),n=count();b.textContent=n;b.classList.toggle("hide",!n);sv("fr_cart",cart)}
+
+function shop(){
+ const cats=["Tout",...new Set(P.map(p=>p.cat).filter(Boolean))];
+ const list=P.filter(p=>(cat==="Tout"||p.cat===cat)&&p.nom.toLowerCase().includes(q.toLowerCase()));
+ V.innerHTML=`<input id="q" type="search" placeholder="Rechercher un produit" value="${esc(q)}">
+ <div class="chips">${cats.map(c=>`<button data-cat="${esc(c)}" class="${c===cat?"on":""}">${esc(c)}</button>`).join("")}</div>
+ ${list.length?`<div class="grid">${list.map(p=>`<div class="card"><div class="pic" ${pic(p)}>${picTxt(p)}</div><div class="cb"><b>${esc(p.nom)}</b><small>${esc(p.cat)}</small><div class="pr">${money(p.prix)}</div><button class="btn" data-add="${p.id}">Ajouter</button></div></div>`).join("")}</div>`:`<p class="empty">Aucun produit trouvé.</p>`}`;
+ const i=$("#q");i.oninput=e=>{q=e.target.value;const pos=e.target.selectionStart;shop();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)};
+}
+
+function cartV(){
+ const items=Object.entries(cart).map(([id,n])=>({p:P.find(x=>x.id==id),n})).filter(x=>x.p);
+ if(!items.length){V.innerHTML=`<p class="empty">Ton panier est vide.<br><br><button class="btn" data-go="shop">Voir la boutique</button></p>`;return}
+ const total=items.reduce((a,x)=>a+x.p.prix*x.n,0);
+ V.innerHTML=`<h2>Mon panier</h2>${items.map(({p,n})=>`<div class="row"><div class="th" ${pic(p)}>${picTxt(p)}</div><div class="in"><b>${esc(p.nom)}</b><small>${money(p.prix)}</small></div><div class="qty"><button data-dec="${p.id}">−</button><b>${n}</b><button data-inc="${p.id}">+</button></div></div>`).join("")}
+ <div class="tot"><span>Total</span><span>${money(total)}</span></div>
+ <label>Ton nom</label><input id="cn" value="${esc(client.nom)}" placeholder="Nom et prénom">
+ <label>Adresse de livraison</label><input id="ca" value="${esc(client.adr)}" placeholder="Quartier, ville">
+ <button class="btn full" data-order>Commander sur WhatsApp</button>
+ <button class="btn ghost full" style="margin-top:.6rem" data-clear>Vider le panier</button>`;
+}
+function order(){
+ client={nom:$("#cn").value.trim(),adr:$("#ca").value.trim()};sv("fr_client",client);
+ if(!client.nom||!client.adr)return toast("Renseigne ton nom et ton adresse");
+ const items=Object.entries(cart).map(([id,n])=>({p:P.find(x=>x.id==id),n})).filter(x=>x.p);
+ const total=items.reduce((a,x)=>a+x.p.prix*x.n,0);
+ const msg=`Bonjour FAIDA ROOM, voici ma commande :\n${items.map(x=>`- ${x.n} x ${x.p.nom} (${x.p.prix*x.n} ${cfg.dev})`).join("\n")}\nTotal : ${total} ${cfg.dev}\nNom : ${client.nom}\nAdresse : ${client.adr}`;
+ window.open(`https://wa.me/${cfg.wa}?text=${encodeURIComponent(msg)}`,"_blank");
+}
+
+function admin(){
+ if(!unlocked){V.innerHTML=`<h2>Espace gestion</h2><label>Code d'accès</label><input id="pin" type="password" inputmode="numeric" placeholder="Code"><button class="btn alt full" data-unlock>Entrer</button><p class="empty">Code par défaut : 1234. Change-le dans les réglages.</p>`;return}
+ const e=P.find(p=>p.id===edit)||{nom:"",cat:"",prix:"",photo:""};
+ V.innerHTML=`<h2>${edit?"Modifier":"Ajouter"} un produit</h2>
+ <input id="fn" placeholder="Nom du produit" value="${esc(e.nom)}">
+ <input id="fc" placeholder="Catégorie (ex. Mode)" value="${esc(e.cat)}">
+ <input id="fp" type="number" inputmode="decimal" placeholder="Prix" value="${esc(e.prix)}">
+ <label>Photo (facultatif)</label><input id="ff" type="file" accept="image/*">
+ <button class="btn full" data-save>${edit?"Enregistrer":"Ajouter le produit"}</button>
+ ${edit?`<button class="btn ghost full" style="margin-top:.5rem" data-cancel>Annuler</button>`:""}
+ <h2 style="margin-top:1.4rem">Produits (${P.length})</h2>
+ ${P.map(p=>`<div class="row"><div class="th" ${pic(p)}>${picTxt(p)}</div><div class="in"><b>${esc(p.nom)}</b><small>${money(p.prix)} · ${esc(p.cat)}</small></div><button class="btn sm alt" data-edit="${p.id}">Éditer</button><button class="btn sm red" data-del="${p.id}">✕</button></div>`).join("")}
+ <h2 style="margin-top:1.4rem">Réglages</h2>
+ <label>Numéro WhatsApp (indicatif, sans +)</label><input id="sw" inputmode="numeric" value="${esc(cfg.wa)}">
+ <label>Devise</label><input id="sd" value="${esc(cfg.dev)}">
+ <label>Code d'accès</label><input id="sp" value="${esc(cfg.pin)}">
+ <label>Clé de publication (identique à celle des règles Firebase)</label><input id="sk" value="${esc(cfg.cle)}">
+ <button class="btn alt full" data-cfg>Enregistrer les réglages</button>
+ <button class="btn full" style="margin-top:.6rem" data-pub>Publier le catalogue en ligne</button>
+ <button class="btn ghost full" style="margin-top:.6rem" data-export>Exporter le catalogue (produits.json)</button>`;
+}
+function resize(file){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const s=Math.min(1,500/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.72))};i.src=r.result};r.readAsDataURL(file)})}
+async function save(){
+ const nom=$("#fn").value.trim(),prix=parseFloat($("#fp").value);
+ if(!nom||isNaN(prix))return toast("Nom et prix obligatoires");
+ const f=$("#ff").files[0],old=P.find(p=>p.id===edit);
+ const o={id:old?old.id:Date.now(),nom,cat:$("#fc").value.trim()||"Divers",prix,photo:f?await resize(f):(old?.photo||""),emoji:old?.emoji||"📦"};
+ old?P[P.indexOf(old)]=o:P.push(o);
+ sv("fr_prod",P);edit=null;admin();publish();
+}
+async function publish(manual){
+ if(!DB||!cfg.cle){if(manual)toast("Renseigne DB (code) et la clé de publication");else toast("Enregistré sur ce téléphone");return}
+ try{const r=await fetch(`${DB}/catalogue.json`,{method:"PUT",body:JSON.stringify({cle:cfg.cle,produits:P})});
+ toast(r.ok?"Catalogue publié en ligne ✓":"Refus : vérifie la clé de publication")}catch{toast("Pas de connexion : non publié")}
+}
+function exportJ(){
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(P)],{type:"application/json"}));a.download="produits.json";a.click();
+}
+
+function go(t){tab=t;document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));({shop,cart:cartV,admin})[t]();window.scrollTo(0,0)}
+document.addEventListener("click",e=>{
+ const d=e.target.closest("button");if(!d)return;const D=d.dataset;
+ if(D.t)return go(D.t);
+ if(D.go)return go(D.go);
+ if(D.cat!==undefined){cat=D.cat;return shop()}
+ if(D.add){cart[D.add]=(cart[D.add]||0)+1;badge();return toast("Ajouté au panier")}
+ if(D.inc){cart[D.inc]++;badge();return cartV()}
+ if(D.dec){if(--cart[D.dec]<=0)delete cart[D.dec];badge();return cartV()}
+ if("clear"in D){cart={};badge();return cartV()}
+ if("order"in D)return order();
+ if("unlock"in D){if($("#pin").value===cfg.pin){unlocked=true;return admin()}return toast("Code incorrect")}
+ if("save"in D)return save();
+ if(D.edit){edit=+D.edit;admin();return window.scrollTo(0,0)}
+ if("cancel"in D){edit=null;return admin()}
+ if(D.del){if(confirm("Supprimer ce produit ?")){P=P.filter(p=>p.id!=D.del);delete cart[D.del];sv("fr_prod",P);badge();admin();publish()}return}
+ if("cfg"in D){cfg={wa:$("#sw").value.replace(/\D/g,""),dev:$("#sd").value||"$",pin:$("#sp").value||"1234",cle:$("#sk").value.trim()};sv("fr_cfg",cfg);return toast("Réglages enregistrés")}
+ if("export"in D)return exportJ();
+ if("pub"in D)return publish(true);
+});
+let dp;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;$("#inst").classList.remove("hide");$("#inst").onclick=()=>{dp.prompt();dp=null;$("#inst").classList.add("hide")}});
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+(async()=>{
+ P=null;
+ if(DB){try{const r=await(await fetch(`${DB}/catalogue/produits.json`)).json();if(r){P=Object.values(r);sv("fr_prod",P)}}catch{}}
+ if(!P)P=ls("fr_prod",null);
+ if(!P){try{P=await(await fetch("produits.json")).json()}catch{P=DEMO}}
+ badge();go("shop");
+})();
+</script>
+</body>
+</html>
